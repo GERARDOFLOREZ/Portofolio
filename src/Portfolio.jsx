@@ -308,7 +308,7 @@ export default function Portfolio() {
     <>
       <div className="progress" ref={bar} aria-hidden="true" />
       <nav className="nav" aria-label="Navigation">
-        <a className="brand" href="#top" aria-label="Haut de page">{s.name.split(/\s+/).map((w) => w[0]).slice(0, 3).join('')}</a>
+        <a className="brand" href="#top" aria-label="Haut de page"><img src="/logo.svg" alt="" width="36" height="36" /></a>
         <div className="links">
           {NAV.map(([id, fr, en]) => (
             <a key={id} href={'#' + id} aria-current={active === id ? 'true' : undefined}><Bi fr={fr} en={en} /></a>
