@@ -68,6 +68,7 @@ function Hero({ s }) {
   const S = (q) => 0.1 + 0.8 * q + m.t
   const qe = (0.85 + m.s - m.t) / 1.6
   const pe = S(qe)
+  const ql = box.w > 900 ? Math.min(0.9, Math.max(0.15, (box.w - 470 - x0) / (x1 - x0))) : 0.86
   const words = s.name.trim().split(/\s+/)
 
   return (
@@ -88,8 +89,8 @@ function Hero({ s }) {
         <text x={X(qe)} y={y0 + 18} textAnchor="middle" className="tick">Q*</text>
         <text x={x0 - 8} y={Y(pe) + 4} textAnchor="end" className="tick">P*</text>
         <circle cx={X(qe)} cy={Y(pe)} r="9" className="eqdot" />
-        <text x={X(1) - 6} y={Y(D(1)) - 8} textAnchor="end" className="lbl dem"><tspan className="fr">Demande</tspan><tspan className="en">Demand</tspan></text>
-        <text x={X(1) - 6} y={Y(S(1)) - 10} textAnchor="end" className="lbl sup"><tspan className="fr">Offre</tspan><tspan className="en">Supply</tspan></text>
+        <text x={X(ql)} y={Y(D(ql)) + 26} textAnchor="middle" className="lbl dem"><tspan className="fr">Demande</tspan><tspan className="en">Demand</tspan></text>
+        <text x={X(ql)} y={Y(S(ql)) - 14} textAnchor="middle" className="lbl sup"><tspan className="fr">Offre</tspan><tspan className="en">Supply</tspan></text>
       </svg>
 
       <div className="hero-in">
