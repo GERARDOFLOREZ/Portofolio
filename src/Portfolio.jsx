@@ -63,25 +63,53 @@ function Hero({ s }) {
       <div className="cell" aria-hidden="true" style={{ transform: `translate(${HW + cell.c * CW}px, ${HH + cell.r * CH}px)` }} />
 
       <div className="hero-in">
-        <div className="fbar" aria-hidden="true">
-          <span className="namebox">{colName(cell.c)}{cell.r + 1}</span>
-          <span className="fx">fx</span>
-          <span className="formula">=PORTFOLIO("{s.name}")</span>
+        <div className="hero-txt">
+          <div className="fbar" aria-hidden="true">
+            <span className="namebox">{colName(cell.c)}{cell.r + 1}</span>
+            <span className="fx">fx</span>
+            <span className="formula">=PORTFOLIO("{s.name}")</span>
+          </div>
+          {(s.availFr || s.availEn) && (
+            <p className="avail"><span className="dot" aria-hidden="true" /><Bi fr={s.availFr} en={s.availEn} /></p>
+          )}
+          <h1 className="name">
+            {words.map((w, i) => (
+              <span key={i}><span className="mask"><span className="word" style={{ animationDelay: i * 90 + 'ms' }}>{w}</span></span>{' '}</span>
+            ))}
+          </h1>
+          <Bi fr={s.leadFr} en={s.leadEn} as="p" className="lead" />
+          <div className="cta">
+            {s.cvUrl && (
+              <a className="btn primary" href={s.cvUrl} download>
+                <Bi fr="Télécharger mon CV" en="Download my CV" />
+              </a>
+            )}
+            <a className="btn" href="#projets"><Bi fr="Voir mes projets" en="See my projects" /></a>
+            <a className="btn" href="#contact"><Bi fr="Me contacter" en="Contact me" /></a>
+          </div>
+          <div className="cta">
+            {(s.links || []).map((l, i) => <Ext key={i} l={l} className="btn small" />)}
+          </div>
+          <Bi fr={s.langFr} en={s.langEn} as="p" className="langs" />
         </div>
-        <h1 className="name">
-          {words.map((w, i) => (
-            <span key={i}><span className="mask"><span className="word" style={{ animationDelay: i * 90 + 'ms' }}>{w}</span></span>{' '}</span>
-          ))}
-        </h1>
-        <Bi fr={s.leadFr} en={s.leadEn} as="p" className="lead" />
-        <div className="cta">
-          <a className="btn primary" href="#projets"><Bi fr="Voir mes projets" en="See my projects" /></a>
-          <a className="btn" href="#contact"><Bi fr="Me contacter" en="Contact me" /></a>
-          {(s.links || []).map((l, i) => <Ext key={i} l={l} className="btn" />)}
-        </div>
-        <Bi fr={s.langFr} en={s.langEn} as="p" className="langs" />
+        {s.photoMain && (
+          <figure className="portrait">
+            <img src={s.photoMain} alt={'Portrait de ' + s.name} width="900" height="1125" />
+          </figure>
+        )}
       </div>
     </header>
+  )
+}
+
+function Bullets({ fr, en }) {
+  const lines = (t) => String(t || '').split('\n').map((x) => x.trim()).filter(Boolean)
+  if (!lines(fr).length && !lines(en).length) return null
+  return (
+    <>
+      <ul className="bul fr">{lines(fr).map((x, i) => <li key={i}>{x}</li>)}</ul>
+      <ul className="bul en">{lines(en).map((x, i) => <li key={i}>{x}</li>)}</ul>
+    </>
   )
 }
 
@@ -135,13 +163,18 @@ function Projects({ s }) {
               <button type="button" className="rowhead" aria-expanded={isOpen} aria-controls={'p' + p.i} onClick={() => setOpen(isOpen ? -1 : p.i)}>
                 <span className="rtitle"><Bi fr={p.titleFr} en={p.titleEn} /></span>
                 <span className={'pill ' + st[2]}><Bi fr={st[0]} en={st[1]} /></span>
-                <span className="rstack">{p.stack}</span>
+                <span className="rstack">{[p.year, p.stack].filter(Boolean).join(' · ')}</span>
                 <span className="chev" aria-hidden="true" />
               </button>
               <div className="rowbody" id={'p' + p.i} role="region">
                 <div className="rowinner">
                   <div className="rowtxt">
+                    {p.image && <img className="shot" src={p.image} alt={'Capture de ' + p.titleFr} loading="lazy" />}
                     <Bi fr={p.descFr} en={p.descEn} as="p" />
+                    <Bullets fr={p.bulletsFr} en={p.bulletsEn} />
+                    {(p.resultFr || p.resultEn) && (
+                      <p className="result"><b><Bi fr="Résultat" en="Result" /></b> <Bi fr={p.resultFr} en={p.resultEn} /></p>
+                    )}
                     {links.length > 0 && (
                       <div className="plinks">{links.map((l, j) => <Ext key={j} l={l} className="btn small" />)}</div>
                     )}
@@ -157,29 +190,67 @@ function Projects({ s }) {
   )
 }
 
+/* ---------- À propos ---------- */
+function About({ s }) {
+  const paras = (t) => String(t || '').split(/\n\s*\n/).map((x) => x.trim()).filter(Boolean)
+  return (
+    <section id="apropos" className="sec-page">
+      <h2><Bi fr="À propos" en="About" /></h2>
+      <div className="about">
+        {s.photoAbout && (
+          <figure className="aboutphoto">
+            <img src={s.photoAbout} alt={'Photo de ' + s.name} width="900" height="1125" loading="lazy" />
+          </figure>
+        )}
+        <div className="abouttxt">
+          <div className="fr">{paras(s.aboutFr).map((x, i) => <p key={i}>{x}</p>)}</div>
+          <div className="en">{paras(s.aboutEn).map((x, i) => <p key={i}>{x}</p>)}</div>
+          {(s.interests || []).length > 0 && (
+            <div className="interests">
+              <h3><Bi fr={s.interestsTitleFr || 'Domaines visés'} en={s.interestsTitleEn || 'Fields of interest'} /></h3>
+              <ul>
+                {s.interests.map((x, i) => <li key={i}><Bi fr={x.fr} en={x.en} /></li>)}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 /* ---------- Compétences ---------- */
+const GROUPS = [
+  ['finance', 'Finance et comptabilité', 'Finance and accounting'],
+  ['data', 'Analyse et économie', 'Analysis and economics'],
+  ['tools', 'Outils', 'Tools'],
+  ['soft', 'Savoir-être', 'Soft skills'],
+]
+
 function Skills({ s }) {
-  const [sel, setSel] = useState(0)
   const list = s.skills || []
-  const cur = list[Math.min(sel, list.length - 1)]
   return (
     <section id="competences" className="sec-page">
       <h2><Bi fr="Compétences" en="Skills" /></h2>
-      <div className="skillgrid">
-        <div>
-          <div className="skillchips">
-            {list.map((k, i) => (
-              <button key={i} type="button" className="skill" aria-pressed={sel === i} onClick={() => setSel(i)}>{k.name}</button>
-            ))}
-          </div>
-          {cur && (
-            <p className="skilldetail" aria-live="polite">
-              <b>{cur.name}</b> <Bi fr={cur.fr} en={cur.en} />
-            </p>
-          )}
-        </div>
-        <Bi fr={s.skillNoteFr} en={s.skillNoteEn} as="p" className="note" />
+      <div className="skillgroups">
+        {GROUPS.map(([g, fr, en]) => {
+          const items = list.map((k, i) => ({ ...k, i })).filter((k) => (k.group || 'tools') === g)
+          if (!items.length) return null
+          return (
+            <div className="sgroup" key={g}>
+              <h3><Bi fr={fr} en={en} /></h3>
+              <ul className="skillchips">
+                {items.map((k) => (
+                  <li key={k.i} className="skill">
+                    {k.name}{(k.fr || k.en) && <small> · <Bi fr={k.fr} en={k.en} /></small>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )
+        })}
       </div>
+      <Bi fr={s.skillNoteFr} en={s.skillNoteEn} as="p" className="note" />
     </section>
   )
 }
@@ -242,6 +313,10 @@ function Contact({ s }) {
           </div>
         )}
       </div>
+      <div className="plinks" style={{ marginTop: 18 }}>
+        {s.cvUrl && <a className="btn small" href={s.cvUrl} download><Bi fr="Télécharger mon CV" en="Download my CV" /></a>}
+        {(s.links || []).map((l, i) => <Ext key={i} l={l} className="btn small" />)}
+      </div>
       <span className="sr" aria-live="polite">{copied ? 'Email copié / copied' : ''}</span>
     </section>
   )
@@ -250,6 +325,7 @@ function Contact({ s }) {
 /* ---------- Page ---------- */
 const NAV = [
   ['projets', 'Projets', 'Projects'],
+  ['apropos', 'À propos', 'About'],
   ['competences', 'Compétences', 'Skills'],
   ['parcours', 'Parcours', 'Education'],
   ['contact', 'Contact', 'Contact'],
@@ -274,7 +350,7 @@ export default function Portfolio() {
   })
   const bar = useRef(null)
 
-  useEffect(() => { loadContent().then((c) => c && setS(c)) }, [])
+  useEffect(() => { loadContent().then((c) => c && setS({ ...defaultContent, ...c })) }, [])
   useEffect(() => {
     document.documentElement.lang = lang
     try { localStorage.setItem('lang', lang) } catch {}
@@ -333,6 +409,7 @@ export default function Portfolio() {
         <Hero s={s} />
         <div className="page">
           <Projects s={s} />
+          <About s={s} />
           <Skills s={s} />
           <Path s={s} />
           <Contact s={s} />
