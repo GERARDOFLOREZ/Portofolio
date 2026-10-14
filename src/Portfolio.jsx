@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { defaultContent } from './content.js'
 import { loadContent } from './supabase.js'
-import { STATUS, safeUrl, waUrl } from './util.js'
+import { STATUS, STATUS_ORDER, safeUrl, waUrl, colName } from './util.js'
 
 export function Bi({ fr, en, as: Tag = 'span', className = '' }) {
   return (
@@ -22,117 +22,326 @@ function Ext({ l, className }) {
   )
 }
 
-export default function Portfolio() {
-  const [s, setS] = useState(defaultContent)
-  const [lang, setLang] = useState(() => {
-    try {
-      const saved = localStorage.getItem('lang')
-      if (saved === 'fr' || saved === 'en') return saved
-      return (navigator.language || 'fr').slice(0, 2) === 'en' ? 'en' : 'fr'
-    } catch {
-      return 'fr'
-    }
-  })
+/* ---------- Hero : une feuille de calcul qui réagit au pointeur ---------- */
+const CW = 60, CH = 32, HW = 34, HH = 26
+
+function Hero({ s }) {
+  const ref = useRef(null)
+  const [dims, setDims] = useState({ c: 14, r: 12 })
+  const [cell, setCell] = useState({ c: 5, r: 3 })
 
   useEffect(() => {
-    loadContent().then((c) => c && setS(c))
+    const el = ref.current
+    const ro = new ResizeObserver(() =>
+      setDims({ c: Math.ceil((el.clientWidth - HW) / CW), r: Math.ceil((el.clientHeight - HH) / CH) }),
+    )
+    ro.observe(el)
+    return () => ro.disconnect()
   }, [])
-  useEffect(() => {
-    document.documentElement.lang = lang
-    try {
-      localStorage.setItem('lang', lang)
-    } catch {}
-  }, [lang])
 
-  const parts = s.name.trim().split(/\s+/)
-  const last = parts.length > 2 ? parts[parts.length - 1] : ''
-  const first = last ? parts.slice(0, -1).join(' ') + ' ' : s.name
-  const wa = waUrl(s.phone)
+  const pick = (e) => {
+    const b = ref.current.getBoundingClientRect()
+    const c = Math.floor((e.clientX - b.left - HW) / CW)
+    const r = Math.floor((e.clientY - b.top - HH) / CH)
+    if (c >= 0 && r >= 0) setCell({ c, r })
+  }
+
+  const words = s.name.trim().split(/\s+/)
 
   return (
-    <div className="wrap" style={{ paddingInline: 20, paddingBlock: '28px 64px' }}>
-      <div className="top">
-        <span className="mono">{s.location}</span>
-        <div className="lang" role="group" aria-label="Langue / Language">
-          <button type="button" aria-pressed={lang === 'fr'} onClick={() => setLang('fr')}>FR</button>
-          <button type="button" aria-pressed={lang === 'en'} onClick={() => setLang('en')}>EN</button>
-        </div>
+    <header className="hero" ref={ref} onPointerMove={pick} onPointerDown={pick}>
+      <div className="sheet-cols" aria-hidden="true">
+        {Array.from({ length: dims.c }, (_, i) => (
+          <span key={i} className={i === cell.c ? 'on' : ''}>{colName(i)}</span>
+        ))}
       </div>
+      <div className="sheet-rows" aria-hidden="true">
+        {Array.from({ length: dims.r }, (_, i) => (
+          <span key={i} className={i === cell.r ? 'on' : ''}>{i + 1}</span>
+        ))}
+      </div>
+      <div className="cell" aria-hidden="true" style={{ transform: `translate(${HW + cell.c * CW}px, ${HH + cell.r * CH}px)` }} />
 
-      <header className="hero">
-        <h1>{first}{last && <em>{last}</em>}</h1>
+      <div className="hero-in">
+        <div className="fbar" aria-hidden="true">
+          <span className="namebox">{colName(cell.c)}{cell.r + 1}</span>
+          <span className="fx">fx</span>
+          <span className="formula">=PORTFOLIO("{s.name}")</span>
+        </div>
+        <h1 className="name">
+          {words.map((w, i) => (
+            <span key={i}><span className="mask"><span className="word" style={{ animationDelay: i * 90 + 'ms' }}>{w}</span></span>{' '}</span>
+          ))}
+        </h1>
         <Bi fr={s.leadFr} en={s.leadEn} as="p" className="lead" />
-        <Bi fr={s.langFr} en={s.langEn} as="p" className="facts" />
         <div className="cta">
           <a className="btn primary" href="#projets"><Bi fr="Voir mes projets" en="See my projects" /></a>
           <a className="btn" href="#contact"><Bi fr="Me contacter" en="Contact me" /></a>
           {(s.links || []).map((l, i) => <Ext key={i} l={l} className="btn" />)}
         </div>
-      </header>
+        <Bi fr={s.langFr} en={s.langEn} as="p" className="langs" />
+      </div>
+    </header>
+  )
+}
 
-      <section id="projets">
-        <h2><Bi fr="Projets" en="Projects" /></h2>
-        <div className="projects">
-          {(s.projects || []).map((p, i) => {
-            const st = STATUS[p.status] || STATUS.concept
-            const links = (p.links || []).filter((l) => l.label && safeUrl(l.url))
-            return (
-              <article className="proj" key={i}>
-                <div className="meta">
-                  <span className={'tag ' + st[2]}><Bi fr={st[0]} en={st[1]} /></span>
-                  {p.stack && <span className="stack">{p.stack}</span>}
-                </div>
-                <div>
-                  <h3><Bi fr={p.titleFr} en={p.titleEn} /></h3>
-                  <Bi fr={p.descFr} en={p.descEn} as="p" />
-                  {links.length > 0 && (
-                    <div className="plinks">{links.map((l, j) => <Ext key={j} l={l} />)}</div>
-                  )}
-                </div>
-              </article>
-            )
-          })}
-        </div>
-      </section>
+/* ---------- Projets : tableau filtrable, triable, lignes dépliables ---------- */
+function Projects({ s }) {
+  const [filter, setFilter] = useState('all')
+  const [sort, setSort] = useState('mine')
+  const [open, setOpen] = useState(0)
 
-      <section>
-        <h2><Bi fr="Compétences" en="Skills" /></h2>
-        <div className="cols">
-          <div>
-            <ul className="skills">
-              {(s.skills || []).map((k, i) => (
-                <li key={i}><span className="n">{k.name}</span><span className="d"><Bi fr={k.fr} en={k.en} /></span></li>
-              ))}
-            </ul>
-          </div>
-          <div><Bi fr={s.skillNoteFr} en={s.skillNoteEn} as="p" className="note" /></div>
-        </div>
-      </section>
+  const all = useMemo(() => (s.projects || []).map((p, i) => ({ ...p, i })), [s.projects])
+  const counts = useMemo(() => {
+    const c = {}
+    all.forEach((p) => { c[p.status] = (c[p.status] || 0) + 1 })
+    return c
+  }, [all])
+  const items = useMemo(() => {
+    let a = filter === 'all' ? all.slice() : all.filter((p) => p.status === filter)
+    if (sort === 'az') a.sort((x, y) => (x.titleFr || '').localeCompare(y.titleFr || '', 'fr'))
+    if (sort === 'status') a.sort((x, y) => STATUS_ORDER.indexOf(x.status) - STATUS_ORDER.indexOf(y.status))
+    return a
+  }, [all, filter, sort])
 
-      <section>
-        <h2><Bi fr="Formation" en="Education" /></h2>
-        <ul className="edu">
-          {(s.edu || []).map((e, i) => (
-            <li key={i}><b><Bi fr={e.fr} en={e.en} /></b><span className="d">{e.detail}</span></li>
+  return (
+    <section id="projets" className="sec-page">
+      <h2><Bi fr="Projets" en="Projects" /></h2>
+      <div className="toolbar">
+        <div className="chips" role="group" aria-label="Filtrer / Filter">
+          <button type="button" className="chip" aria-pressed={filter === 'all'} onClick={() => setFilter('all')}>
+            <Bi fr="Tous" en="All" /> <b>{all.length}</b>
+          </button>
+          {STATUS_ORDER.filter((k) => counts[k]).map((k) => (
+            <button key={k} type="button" className="chip" aria-pressed={filter === k} onClick={() => setFilter(k)}>
+              <Bi fr={STATUS[k][0]} en={STATUS[k][1]} /> <b>{counts[k]}</b>
+            </button>
           ))}
-        </ul>
-      </section>
+        </div>
+        <div className="chips" role="group" aria-label="Trier / Sort">
+          <button type="button" className="chip plain" aria-pressed={sort === 'mine'} onClick={() => setSort('mine')}><Bi fr="Mon ordre" en="My order" /></button>
+          <button type="button" className="chip plain" aria-pressed={sort === 'az'} onClick={() => setSort('az')}>A–Z</button>
+          <button type="button" className="chip plain" aria-pressed={sort === 'status'} onClick={() => setSort('status')}><Bi fr="Statut" en="Status" /></button>
+        </div>
+      </div>
 
-      <section id="contact">
-        <h2>Contact</h2>
-        <div className="contact">
-          <Bi fr={s.contactFr} en={s.contactEn} as="p" />
-          {s.email && <div className="row"><span className="k">Email</span><span className="val">{s.email}</span></div>}
-          {s.phone && (
-            <div className="row">
-              <span className="k">WhatsApp</span><span className="val">{s.phone}</span>
-              {wa && <a href={wa} target="_blank" rel="noopener noreferrer"><Bi fr="Ouvrir WhatsApp" en="Open WhatsApp" /></a>}
-            </div>
+      <ul className="table">
+        {items.map((p) => {
+          const st = STATUS[p.status] || STATUS.concept
+          const links = (p.links || []).filter((l) => l.label && safeUrl(l.url))
+          const isOpen = open === p.i
+          return (
+            <li key={p.i} className={'row' + (isOpen ? ' open' : '')}>
+              <button type="button" className="rowhead" aria-expanded={isOpen} aria-controls={'p' + p.i} onClick={() => setOpen(isOpen ? -1 : p.i)}>
+                <span className="rtitle"><Bi fr={p.titleFr} en={p.titleEn} /></span>
+                <span className={'pill ' + st[2]}><Bi fr={st[0]} en={st[1]} /></span>
+                <span className="rstack">{p.stack}</span>
+                <span className="chev" aria-hidden="true" />
+              </button>
+              <div className="rowbody" id={'p' + p.i} role="region">
+                <div className="rowinner">
+                  <div className="rowtxt">
+                    <Bi fr={p.descFr} en={p.descEn} as="p" />
+                    {links.length > 0 && (
+                      <div className="plinks">{links.map((l, j) => <Ext key={j} l={l} className="btn small" />)}</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </li>
+          )
+        })}
+      </ul>
+      {items.length === 0 && <p className="note"><Bi fr="Aucun projet dans cette catégorie." en="No project in this category." /></p>}
+    </section>
+  )
+}
+
+/* ---------- Compétences ---------- */
+function Skills({ s }) {
+  const [sel, setSel] = useState(0)
+  const list = s.skills || []
+  const cur = list[Math.min(sel, list.length - 1)]
+  return (
+    <section id="competences" className="sec-page">
+      <h2><Bi fr="Compétences" en="Skills" /></h2>
+      <div className="skillgrid">
+        <div>
+          <div className="skillchips">
+            {list.map((k, i) => (
+              <button key={i} type="button" className="skill" aria-pressed={sel === i} onClick={() => setSel(i)}>{k.name}</button>
+            ))}
+          </div>
+          {cur && (
+            <p className="skilldetail" aria-live="polite">
+              <b>{cur.name}</b> <Bi fr={cur.fr} en={cur.en} />
+            </p>
           )}
         </div>
-      </section>
+        <Bi fr={s.skillNoteFr} en={s.skillNoteEn} as="p" className="note" />
+      </div>
+    </section>
+  )
+}
 
-      <footer>© 2026 {s.name} · <a className="footlink" href="/admin">Admin</a></footer>
-    </div>
+/* ---------- Parcours : une vraie chronologie ---------- */
+function Path({ s }) {
+  return (
+    <section id="parcours" className="sec-page">
+      <h2><Bi fr="Parcours" en="Education" /></h2>
+      <ol className="timeline">
+        {(s.edu || []).map((e, i) => (
+          <li key={i}>
+            <span className="when">{e.detail}</span>
+            <span className="what"><Bi fr={e.fr} en={e.en} /></span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  )
+}
+
+/* ---------- Contact ---------- */
+function Contact({ s }) {
+  const [copied, setCopied] = useState(false)
+  const wa = waUrl(s.phone)
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(s.email)
+    } catch {
+      const el = document.getElementById('mail')
+      const r = document.createRange()
+      r.selectNodeContents(el)
+      const sel = window.getSelection()
+      sel.removeAllRanges()
+      sel.addRange(r)
+    }
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+  return (
+    <section id="contact" className="sec-page contact">
+      <Bi fr={s.contactFr} en={s.contactEn} as="h2" className="big" />
+      <div className="contact-row">
+        {s.email && (
+          <div className="mailbox">
+            <span id="mail" className="val">{s.email}</span>
+            <button type="button" className="btn small" onClick={copy}>
+              {copied ? <Bi fr="Copié" en="Copied" /> : <Bi fr="Copier" en="Copy" />}
+            </button>
+          </div>
+        )}
+        {s.phone && (
+          <div className="mailbox">
+            <span className="val">{s.phone}</span>
+            {wa && (
+              <a className="btn small primary" href={wa} target="_blank" rel="noopener noreferrer">
+                <Bi fr="Écrire sur WhatsApp" en="Message on WhatsApp" />
+              </a>
+            )}
+          </div>
+        )}
+      </div>
+      <span className="sr" aria-live="polite">{copied ? 'Email copié / copied' : ''}</span>
+    </section>
+  )
+}
+
+/* ---------- Page ---------- */
+const NAV = [
+  ['projets', 'Projets', 'Projects'],
+  ['competences', 'Compétences', 'Skills'],
+  ['parcours', 'Parcours', 'Education'],
+  ['contact', 'Contact', 'Contact'],
+]
+
+export default function Portfolio() {
+  const [s, setS] = useState(defaultContent)
+  const [active, setActive] = useState('')
+  const [lang, setLang] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lang')
+      if (saved === 'fr' || saved === 'en') return saved
+    } catch {}
+    return (navigator.language || 'fr').slice(0, 2) === 'en' ? 'en' : 'fr'
+  })
+  const [dark, setDark] = useState(() => {
+    try {
+      const t = localStorage.getItem('theme')
+      if (t) return t === 'dark'
+    } catch {}
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
+  })
+  const bar = useRef(null)
+
+  useEffect(() => { loadContent().then((c) => c && setS(c)) }, [])
+  useEffect(() => {
+    document.documentElement.lang = lang
+    try { localStorage.setItem('lang', lang) } catch {}
+  }, [lang])
+  useEffect(() => {
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+    try { localStorage.setItem('theme', dark ? 'dark' : 'light') } catch {}
+  }, [dark])
+
+  useEffect(() => {
+    const onScroll = () => {
+      const h = document.documentElement
+      const p = h.scrollHeight - h.clientHeight
+      if (bar.current) bar.current.style.transform = `scaleX(${p > 0 ? h.scrollTop / p : 0})`
+    }
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  useEffect(() => {
+    const io = new IntersectionObserver(
+      (es) => es.forEach((e) => e.isIntersecting && setActive(e.target.id)),
+      { rootMargin: '-45% 0px -50% 0px' },
+    )
+    NAV.forEach(([id]) => { const el = document.getElementById(id); el && io.observe(el) })
+    return () => io.disconnect()
+  }, [s])
+
+  return (
+    <>
+      <div className="progress" ref={bar} aria-hidden="true" />
+      <nav className="nav" aria-label="Navigation">
+        <a className="brand" href="#top" aria-label="Haut de page">{s.name.split(/\s+/).map((w) => w[0]).slice(0, 3).join('')}</a>
+        <div className="links">
+          {NAV.map(([id, fr, en]) => (
+            <a key={id} href={'#' + id} aria-current={active === id ? 'true' : undefined}><Bi fr={fr} en={en} /></a>
+          ))}
+        </div>
+        <div className="tools">
+          <div className="lang" role="group" aria-label="Langue / Language">
+            <button type="button" aria-pressed={lang === 'fr'} onClick={() => setLang('fr')}>FR</button>
+            <button type="button" aria-pressed={lang === 'en'} onClick={() => setLang('en')}>EN</button>
+          </div>
+          <button type="button" className="theme" onClick={() => setDark(!dark)} aria-label={dark ? 'Thème clair / Light theme' : 'Thème sombre / Dark theme'}>
+            {dark ? (
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>
+            ) : (
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" /></svg>
+            )}
+          </button>
+        </div>
+      </nav>
+
+      <main id="top">
+        <Hero s={s} />
+        <div className="page">
+          <Projects s={s} />
+          <Skills s={s} />
+          <Path s={s} />
+          <Contact s={s} />
+        </div>
+      </main>
+      <footer className="foot">
+        <span>© 2026 {s.name}</span>
+        <span>{s.location} · <a className="footlink" href="/admin">Admin</a></span>
+      </footer>
+    </>
   )
 }
