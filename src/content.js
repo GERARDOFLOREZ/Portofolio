@@ -189,132 +189,168 @@ export const defaultContent = {
     {
       "group": "finance",
       "name": "Comptabilité générale et analytique",
+      "nameEn": "General and cost accounting",
       "fr": "",
       "en": ""
     },
     {
       "group": "finance",
       "name": "Analyse des états financiers",
+      "nameEn": "Financial statement analysis",
       "fr": "",
       "en": ""
     },
     {
       "group": "finance",
       "name": "Mathématiques financières",
+      "nameEn": "Financial mathematics",
       "fr": "",
       "en": ""
     },
     {
       "group": "finance",
       "name": "Modélisation financière",
+      "nameEn": "Financial modelling",
       "fr": "notions",
       "en": "foundations"
     },
     {
       "group": "finance",
       "name": "Évaluation d'entreprises",
+      "nameEn": "Business valuation",
       "fr": "notions",
       "en": "foundations"
     },
     {
-      "group": "finance",
-      "name": "Sage 100",
-      "fr": "",
-      "en": ""
-    },
-    {
       "group": "data",
-      "name": "Analyse économique micro et macro",
-      "fr": "",
-      "en": ""
-    },
-    {
-      "group": "data",
-      "name": "Statistiques descriptives et inférentielles",
+      "name": "Analyse économique (micro et macro)",
+      "nameEn": "Economic analysis (micro and macro)",
       "fr": "",
       "en": ""
     },
     {
       "group": "data",
       "name": "Modélisation économique",
+      "nameEn": "Economic modelling",
       "fr": "notions",
       "en": "foundations"
     },
     {
       "group": "data",
+      "name": "Statistiques descriptives et inférentielles",
+      "nameEn": "Descriptive and inferential statistics",
+      "fr": "",
+      "en": ""
+    },
+    {
+      "group": "data",
       "name": "Raisonnement quantitatif",
+      "nameEn": "Quantitative reasoning",
+      "fr": "",
+      "en": ""
+    },
+    {
+      "group": "data",
+      "name": "Résolution de problèmes",
+      "nameEn": "Problem solving",
       "fr": "",
       "en": ""
     },
     {
       "group": "tools",
-      "name": "Excel : VBA, tableaux croisés",
-      "fr": "avancé",
-      "en": "advanced"
+      "name": "Microsoft Excel",
+      "nameEn": "Microsoft Excel",
+      "fr": "avancé : VBA, tableaux croisés dynamiques",
+      "en": "advanced: VBA, pivot tables"
     },
     {
       "group": "tools",
-      "name": "Word · PowerPoint",
+      "name": "Sage 100",
+      "nameEn": "Sage 100",
       "fr": "",
       "en": ""
+    },
+    {
+      "group": "tools",
+      "name": "Word, PowerPoint",
+      "nameEn": "Word, PowerPoint",
+      "fr": "",
+      "en": ""
+    },
+    {
+      "group": "tools",
+      "name": "React + Vite",
+      "nameEn": "React + Vite",
+      "fr": "projets réels",
+      "en": "real projects"
+    },
+    {
+      "group": "tools",
+      "name": "JavaScript",
+      "nameEn": "JavaScript",
+      "fr": "projets réels",
+      "en": "real projects"
     },
     {
       "group": "tools",
       "name": "Supabase",
-      "fr": "auth, base de données, sécurité par ligne",
-      "en": "auth, database, row-level security"
+      "nameEn": "Supabase",
+      "fr": "auth, base de données, RLS",
+      "en": "auth, database, RLS"
     },
     {
       "group": "tools",
       "name": "Vercel · GitHub",
+      "nameEn": "Vercel · GitHub",
       "fr": "déploiement",
       "en": "deployment"
     },
     {
       "group": "tools",
-      "name": "React + Vite",
-      "fr": "utilisé dans mes projets",
-      "en": "used in my projects"
+      "name": "Visual Studio Code",
+      "nameEn": "Visual Studio Code",
+      "fr": "bases",
+      "en": "basics"
     },
     {
       "group": "tools",
-      "name": "Visual Studio Code",
-      "fr": "notions",
-      "en": "foundations"
+      "name": "Claude et ChatGPT",
+      "nameEn": "Claude and ChatGPT",
+      "fr": "intermédiaire",
+      "en": "intermediate"
     },
     {
       "group": "soft",
       "name": "Gestion administrative",
+      "nameEn": "Administrative management",
       "fr": "",
       "en": ""
     },
     {
       "group": "soft",
       "name": "Esprit analytique",
+      "nameEn": "Analytical mindset",
       "fr": "",
       "en": ""
     },
     {
       "group": "soft",
       "name": "Travail en équipe",
+      "nameEn": "Teamwork",
       "fr": "",
       "en": ""
     },
     {
       "group": "soft",
       "name": "Communication claire",
+      "nameEn": "Clear communication",
       "fr": "",
       "en": ""
     },
     {
       "group": "soft",
       "name": "Organisation",
-      "fr": "",
-      "en": ""
-    },
-    {
-      "group": "soft",
-      "name": "Résolution de problèmes",
+      "nameEn": "Organisation",
       "fr": "",
       "en": ""
     }

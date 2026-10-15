@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { defaultContent } from './content.js'
 import { loadContent } from './supabase.js'
-import { EcoChart, AcctChart, FinChart } from './HeroCharts.jsx'
+import { EcoChart, FinChart } from './HeroCharts.jsx'
+import { TraderBg, SkillsBg, DevBg } from './Backdrops.jsx'
 import { STATUS, STATUS_ORDER, safeUrl, waUrl } from './util.js'
 
 export function Bi({ fr, en, as: Tag = 'span', className = '' }) {
@@ -92,23 +93,31 @@ function CvViewer({ url }) {
   )
 }
 
-/* ---------- Hero : offre et demande, l'équilibre suit le pointeur ---------- */
-const MODES = [
-  { id: 'eco', fr: 'Économie', en: 'Economics' },
-  { id: 'acct', fr: 'Comptabilité', en: 'Accounting' },
-  { id: 'fin', fr: 'Finance', en: 'Finance' },
-]
+/* ---------- Bande : section pleine largeur avec une représentation en arrière-plan ---------- */
+const BGS = { fin: FinChart, trader: TraderBg, skills: SkillsBg, dev: DevBg }
+function Band({ kind, children }) {
+  const { ref, box, nx, ny, bind } = useScene()
+  const Bg = BGS[kind]
+  const live = kind === 'fin' || kind === 'skills'
+  return (
+    <div className={'band' + (kind ? ' band-' + kind : '')} ref={ref} {...(live ? bind : {})}>
+      {Bg && (
+        <svg className="bandbg eq" width={box.w} height={box.h} viewBox={`0 0 ${box.w} ${box.h}`} aria-hidden="true">
+          <Bg box={box} nx={nx} ny={ny} />
+        </svg>
+      )}
+      {children}
+    </div>
+  )
+}
 
-function Hero({ s }) {
+/* ---------- Pointeur : position lissée (nx, ny entre 0 et 1) pour les scènes ---------- */
+function useScene() {
   const ref = useRef(null)
   const [box, setBox] = useState({ w: 1200, h: 640 })
   const [m, setM] = useState({ s: 0, t: 0 })
   const target = useRef({ s: 0, t: 0 })
   const raf = useRef(0)
-  const [mode, setModeRaw] = useState(() => {
-    try { const v = localStorage.getItem('hero-mode'); return MODES.some((x) => x.id === v) ? v : 'eco' } catch { return 'eco' }
-  })
-  const setMode = (v) => { setModeRaw(v); try { localStorage.setItem('hero-mode', v) } catch { /* ignore */ } }
 
   useEffect(() => {
     const el = ref.current
@@ -139,17 +148,18 @@ function Hero({ s }) {
     if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) run()
     else setM(target.current)
   }
+  return { ref, box, nx: m.s / 0.4 + 0.5, ny: 0.5 - m.t / 0.3, bind: { onPointerMove: pick, onPointerDown: pick } }
+}
 
-  const nx = m.s / 0.4 + 0.5
-  const ny = 0.5 - m.t / 0.3
+/* ---------- Hero : offre et demande, l'équilibre suit le pointeur ---------- */
+function Hero({ s }) {
+  const { ref, box, nx, ny, bind } = useScene()
   const words = s.name.trim().split(/\s+/)
 
   return (
-    <header className="hero" ref={ref} onPointerMove={pick} onPointerDown={pick}>
-      <svg className={'eq mode-' + mode} width={box.w} height={box.h} viewBox={`0 0 ${box.w} ${box.h}`} aria-hidden="true">
-        {mode === 'eco' && <EcoChart box={box} nx={nx} ny={ny} />}
-        {mode === 'acct' && <AcctChart box={box} nx={nx} ny={ny} />}
-        {mode === 'fin' && <FinChart box={box} nx={nx} ny={ny} />}
+    <header className="hero" ref={ref} {...bind}>
+      <svg className="eq" width={box.w} height={box.h} viewBox={`0 0 ${box.w} ${box.h}`} aria-hidden="true">
+        <EcoChart box={box} nx={nx} ny={ny} />
       </svg>
 
       <div className="hero-in">
@@ -184,18 +194,7 @@ function Hero({ s }) {
           </figure>
         )}
       </div>
-      <div className="modes" role="group" aria-label="Scène / Scene">
-        {MODES.map((x) => (
-          <button key={x.id} type="button" aria-pressed={mode === x.id} onClick={() => setMode(x.id)}>
-            <Bi fr={x.fr} en={x.en} />
-          </button>
-        ))}
-      </div>
-      <p className="hint" aria-hidden="true">
-        {mode === 'eco' && <Bi fr="Bougez le pointeur : l'offre, la demande et l'équilibre se déplacent." en="Move the pointer: supply, demand and the equilibrium shift." />}
-        {mode === 'acct' && <Bi fr="Bougez le pointeur : le bilan grandit (→) et s'endette (↓), mais Actif = Passif reste vrai." en="Move the pointer: the balance sheet grows (→) and takes on debt (↓), yet Assets = Liabilities + Equity always holds." />}
-        {mode === 'fin' && <Bi fr="Bougez le pointeur : le taux (→) et la durée (↓) changent la puissance des intérêts composés." en="Move the pointer: rate (→) and duration (↓) change the power of compound interest." />}
-      </p>
+      <p className="hint" aria-hidden="true"><Bi fr="Bougez le pointeur : l'offre, la demande et l'équilibre se déplacent." en="Move the pointer: supply, demand and the equilibrium shift." /></p>
     </header>
   )
 }
@@ -319,10 +318,10 @@ function About({ s }) {
 
 /* ---------- Compétences ---------- */
 const GROUPS = [
-  ['finance', 'Finance et comptabilité', 'Finance and accounting'],
-  ['data', 'Analyse et économie', 'Analysis and economics'],
-  ['tools', 'Outils', 'Tools'],
-  ['soft', 'Savoir-être', 'Soft skills'],
+  ['finance', 'Domaine financier et comptable', 'Finance and accounting'],
+  ['data', 'Analyse de données et économie', 'Data analysis and economics'],
+  ['tools', 'Outils et technologies', 'Tools and technologies'],
+  ['soft', 'Compétences transversales', 'Transferable skills'],
 ]
 
 function Skills({ s }) {
@@ -340,7 +339,7 @@ function Skills({ s }) {
               <ul className="skillchips">
                 {items.map((k) => (
                   <li key={k.i} className="skill">
-                    {k.name}{(k.fr || k.en) && <small> · <Bi fr={k.fr} en={k.en} /></small>}
+                    <Bi fr={k.name} en={k.nameEn || k.name} />{(k.fr || k.en) && <small> · <Bi fr={k.fr} en={k.en} /></small>}
                   </li>
                 ))}
               </ul>
@@ -505,18 +504,18 @@ export default function Portfolio() {
 
       <main id="top">
         <Hero s={s} />
-        <div className="page">
-          <Projects s={s} />
-          <About s={s} />
-          <Skills s={s} />
-          <Path s={s} />
-          <Contact s={s} />
-        </div>
+        <Band kind="fin"><div className="page"><Projects s={s} /></div></Band>
+        <Band kind="trader"><div className="page"><About s={s} /></div></Band>
+        <Band kind="skills"><div className="page"><Skills s={s} /></div></Band>
+        <Band><div className="page"><Path s={s} /></div></Band>
+        <Band kind="dev">
+          <div className="page"><Contact s={s} /></div>
+          <footer className="foot">
+            <span>© 2026 {s.name}</span>
+            <span>{s.location} · <a className="footlink" href="/admin">Admin</a></span>
+          </footer>
+        </Band>
       </main>
-      <footer className="foot">
-        <span>© 2026 {s.name}</span>
-        <span>{s.location} · <a className="footlink" href="/admin">Admin</a></span>
-      </footer>
     </>
   )
 }

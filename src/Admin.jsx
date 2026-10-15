@@ -66,7 +66,7 @@ function pairs(d) {
   const top = [['leadFr', 'leadEn'], ['aboutFr', 'aboutEn'], ['availFr', 'availEn'], ['contactFr', 'contactEn'], ['interestsTitleFr', 'interestsTitleEn'], ['skillNoteFr', 'skillNoteEn']]
   top.forEach(([f, e]) => out.push([d, f, e]))
   ;(d.interests || []).forEach((x) => out.push([x, 'fr', 'en']))
-  ;(d.skills || []).forEach((x) => out.push([x, 'fr', 'en']))
+  ;(d.skills || []).forEach((x) => { out.push([x, 'name', 'nameEn']); out.push([x, 'fr', 'en']) })
   ;(d.edu || []).forEach((x) => out.push([x, 'fr', 'en']))
   ;(d.projects || []).forEach((p) => {
     ;[['titleFr', 'titleEn'], ['descFr', 'descEn'], ['bulletsFr', 'bulletsEn'], ['resultFr', 'resultEn']].forEach(([f, e]) => out.push([p, f, e]))
@@ -240,13 +240,14 @@ function Editor() {
                 <label className="fld">
                   <span className="lbl">Catégorie</span>
                   <select className="in" value={k.group || 'tools'} onChange={(e) => edit((c) => { c.skills[i].group = e.target.value })}>
-                    <option value="finance">Finance et comptabilité</option>
-                    <option value="data">Analyse et économie</option>
-                    <option value="tools">Outils</option>
-                    <option value="soft">Savoir-être</option>
+                    <option value="finance">Domaine financier et comptable</option>
+                    <option value="data">Analyse de données et économie</option>
+                    <option value="tools">Outils et technologies</option>
+                    <option value="soft">Compétences transversales</option>
                   </select>
                 </label>
-                <Field label="Compétence" value={k.name} onChange={(v) => edit((c) => { c.skills[i].name = v })} />
+                <Field label="Compétence (FR)" value={k.name} onChange={(v) => edit((c) => { c.skills[i].name = v })} />
+                <Field label="Compétence (EN)" value={k.nameEn} onChange={(v) => edit((c) => { c.skills[i].nameEn = v })} />
                 <Field label="Niveau (FR)" value={k.fr} onChange={(v) => edit((c) => { c.skills[i].fr = v })} />
                 <Field label="Niveau (EN)" value={k.en} onChange={(v) => edit((c) => { c.skills[i].en = v })} />
               </div>
@@ -254,7 +255,7 @@ function Editor() {
             </div>
           ))}
           <div className="btns">
-            <button type="button" className="btn small" onClick={() => edit((c) => c.skills.push({ group: 'tools', name: '', fr: '', en: '' }))}>Ajouter une compétence</button>
+            <button type="button" className="btn small" onClick={() => edit((c) => c.skills.push({ group: 'tools', name: '', nameEn: '', fr: '', en: '' }))}>Ajouter une compétence</button>
           </div>
           <Field label="Note sous les compétences (FR)" area rows={2} {...field('skillNoteFr')} />
           <Field label="Note sous les compétences (EN)" area rows={2} {...field('skillNoteEn')} />
