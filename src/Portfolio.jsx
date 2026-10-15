@@ -23,18 +23,56 @@ function Ext({ l, className }) {
   )
 }
 
-/* ---------- Voir le CV directement sur le site (sans le télécharger) ---------- */
+/* ---------- Voir le CV directement sur le site : le PDF est dessiné page par page, il défile partout ---------- */
+function CvPages({ url }) {
+  const box = useRef(null)
+  const [state, setState] = useState('load')
+  useEffect(() => {
+    let dead = false
+    let doc = null
+    ;(async () => {
+      try {
+        const pdfjs = await import('pdfjs-dist/build/pdf.min.mjs')
+        const worker = (await import('pdfjs-dist/build/pdf.worker.min.mjs?url')).default
+        pdfjs.GlobalWorkerOptions.workerSrc = worker
+        doc = await pdfjs.getDocument(url).promise
+        const host = box.current
+        if (dead || !host) return
+        host.textContent = ''
+        const width = Math.max(280, host.clientWidth - 24)
+        const dpr = Math.min(2.5, window.devicePixelRatio || 1)
+        for (let n = 1; n <= doc.numPages; n++) {
+          const page = await doc.getPage(n)
+          if (dead) return
+          const base = page.getViewport({ scale: 1 })
+          const vp = page.getViewport({ scale: (width / base.width) * dpr })
+          const c = document.createElement('canvas')
+          c.width = Math.floor(vp.width); c.height = Math.floor(vp.height)
+          c.style.width = width + 'px'; c.style.height = Math.floor(vp.height / dpr) + 'px'
+          c.className = 'cvpage'
+          host.appendChild(c)
+          await page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise
+        }
+        if (!dead) setState('ok')
+      } catch { if (!dead) setState('err') }
+    })()
+    return () => { dead = true; if (doc) doc.destroy() }
+  }, [url])
+  return (
+    <div className="cvscroll">
+      {state === 'load' && <p className="cvmsg"><Bi fr="Chargement du CV…" en="Loading the CV…" /></p>}
+      {state === 'err' && <p className="cvmsg"><Bi fr="Impossible d'afficher le CV ici. Utilisez « Nouvel onglet » ou « Télécharger »." en="Could not display the CV here. Use “New tab” or “Download”." /></p>}
+      <div ref={box} className="cvpages" />
+    </div>
+  )
+}
+
 function CvViewer({ url }) {
   const dlg = useRef(null)
   const [shown, setShown] = useState(false)
   const href = String(url || '').startsWith('/') ? url : safeUrl(url)
   if (!href) return null
-  const canEmbed = typeof navigator !== 'undefined' && navigator.pdfViewerEnabled !== false && window.matchMedia('(min-width: 701px)').matches
-  const open = () => {
-    if (!canEmbed) { window.open(href, '_blank', 'noopener'); return }
-    setShown(true)
-    dlg.current && dlg.current.showModal()
-  }
+  const open = () => { setShown(true); dlg.current && dlg.current.showModal() }
   const close = () => { dlg.current && dlg.current.close(); setShown(false) }
   return (
     <>
@@ -48,7 +86,7 @@ function CvViewer({ url }) {
             <button type="button" className="btn small primary" onClick={close}><Bi fr="Fermer" en="Close" /></button>
           </span>
         </div>
-        {shown && <iframe className="cvframe" src={href + '#view=FitH'} title="CV" />}
+        {shown && <CvPages url={href} />}
       </dialog>
     </>
   )
