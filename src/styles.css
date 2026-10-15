@@ -224,3 +224,4 @@ html[lang="fr"] .eq .en,html[lang="en"] .eq .fr{display:none}
 .cvbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .cvact{display:flex;gap:8px;flex-wrap:wrap}
 .cvframe{flex:1;width:100%;border:0;background:#fff}
+.auto{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--muted);white-space:nowrap}
