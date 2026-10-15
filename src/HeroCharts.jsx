@@ -42,11 +42,12 @@ export function EcoChart({ box, nx, ny }) {
 export function AcctChart({ box, nx, ny }) {
   const x0 = 56, y0 = box.h - 64, x1 = box.w - 28, y1 = 60
   const H = y0 - y1
+  const wide = box.w > 900
   const total = 0.5 + 0.5 * nx            // taille du bilan (le pointeur à droite = l'entreprise grandit)
   const debt = 0.1 + 0.75 * ny            // part de dettes (le pointeur en bas = plus d'endettement)
   const th = total * H
-  const fixed = 0.55, W = Math.max(70, Math.min(170, (x1 - x0) * 0.17))
-  const cA = x0 + (x1 - x0) * 0.22, cP = x0 + (x1 - x0) * 0.68
+  const fixed = 0.55, W = Math.max(70, Math.min(170, (x1 - x0) * (wide ? 0.14 : 0.2)))
+  const cA = x0 + (x1 - x0) * (wide ? 0.58 : 0.26), cP = x0 + (x1 - x0) * (wide ? 0.82 : 0.7)
   const gap = 3
   const seg = (cx, from, h, cls, fr, en) => (
     <g key={cls}>

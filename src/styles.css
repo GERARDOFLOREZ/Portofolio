@@ -202,27 +202,22 @@ html[lang="fr"] .eq .en,html[lang="en"] .eq .fr{display:none}
 .hint{position:absolute;left:0;right:0;bottom:8px;margin:0;text-align:center;font-size:13px;color:var(--muted);pointer-events:none}
 @media (max-width:640px){.hint{display:none}.eq{opacity:.5}.eq .guide,.eq .tick,.eq .axl{display:none}}
 
-/* scènes Finance et Comptabilité */
-.scene{position:relative;overflow:hidden;display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);align-items:stretch;min-height:460px;border-bottom:1px solid var(--line);touch-action:pan-y}
-.scene-txt{position:relative;z-index:2;display:flex;flex-direction:column;gap:14px;justify-content:center;padding:56px 24px 56px 56px;min-width:0}
-.scene-txt h2{font:800 clamp(26px,3.2vw,38px)/1.1 var(--f-display);margin:0;letter-spacing:-.02em}
+/* scènes Finance et Comptabilité : même principe que l'accueil, le graphique occupe tout l'arrière-plan */
+.scene{position:relative;overflow:hidden;display:flex;align-items:center;min-height:min(78vh,620px);border-bottom:1px solid var(--line);touch-action:pan-y}
+.scene-txt{position:relative;z-index:2;display:flex;flex-direction:column;gap:14px;max-width:520px;padding:64px 28px 64px 56px;pointer-events:none}
+.scene-txt h2{font:800 clamp(26px,3.4vw,42px)/1.08 var(--f-display);margin:0;letter-spacing:-.02em}
 .scene-txt .lead{margin:0;font-size:17px;color:var(--muted)}
 .scene .tag{margin:0;font:700 12px var(--f-body);letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
 .scene .formula{margin:4px 0 0;display:inline-block;align-self:flex-start;font:700 17px var(--f-display);padding:8px 14px;border-radius:12px;background:var(--surface);border:1.5px solid var(--line)}
 .scene .hint2{margin:0;font-size:13px;color:var(--muted)}
-.scene-chart{position:relative;min-height:340px}
-.scene .eq{position:absolute;inset:0}
-.scene .eq .curve{opacity:.95}
-.eq .seg{opacity:.85}
+.eq .seg{opacity:.4}
 .eq .seg.a1,.eq .seg.p2{fill:var(--accent)}
-.eq .seg.a2,.eq .seg.p1{fill:var(--mark)}
-.eq .seglbl{font:700 13px var(--f-body)}
-.eq .seglbl.a1,.eq .seglbl.p2{fill:var(--accent-fg)}
-.eq .seglbl.a2,.eq .seglbl.p1{fill:var(--mark-fg)}
-.eq .eqsign{font:800 54px var(--f-display);fill:var(--fg);opacity:.4}
-.eq .gap{fill:var(--accent);opacity:.16}
-.eq .curve.sup[stroke-dasharray]{opacity:.9}
-@media (max-width:900px){.scene{grid-template-columns:minmax(0,1fr)}.scene-txt{padding:44px 16px 8px 46px}.scene-chart{height:340px}}
+.eq .seg.a2,.eq .seg.p1{fill:var(--mark);opacity:.5}
+.eq .seglbl{font:700 13px var(--f-body);fill:var(--fg)}
+.eq .eqsign{font:800 54px var(--f-display);fill:var(--fg);opacity:.35}
+.eq .gap{fill:var(--accent);opacity:.12}
+.eq .curve.sup[stroke-dasharray]{opacity:.8}
+@media (max-width:900px){.scene-txt{padding:48px 16px 48px 46px}}
+@media (max-width:640px){.scene .eq .tick,.scene .eq .axl{display:initial}.scene .eq .seglbl,.scene .eq .eqsign{display:none}}
 .eq .swd{fill:var(--accent)}.eq .sws{fill:var(--mark)}
-@media (max-width:640px){.scene .eq{opacity:1}.scene .eq .tick,.scene .eq .axl{display:initial}.scene .eq .seglbl,.scene .eq .eqsign{display:initial}}
 .auto{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--muted);white-space:nowrap}

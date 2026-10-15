@@ -113,9 +113,6 @@ function Hero({ s }) {
 /* ---------- Scènes Finance et Comptabilité : empilées sous l'accueil ---------- */
 function Scene({ id, tag, titleFr, titleEn, fr, en, formula, hintFr, hintEn, Chart }) {
   const { ref, box, nx, ny, bind } = useScene()
-  const wide = box.w > 900
-  const cw = Math.max(260, wide ? box.w - 420 : box.w)
-  const ch = wide ? Math.max(box.h, 460) : 340
   return (
     <section id={id} className="scene" ref={ref} {...bind} aria-labelledby={id + '-t'}>
       <div className="scene-txt">
@@ -125,11 +122,9 @@ function Scene({ id, tag, titleFr, titleEn, fr, en, formula, hintFr, hintEn, Cha
         <p className="formula">{formula}</p>
         <p className="hint2"><Bi fr={hintFr} en={hintEn} /></p>
       </div>
-      <div className="scene-chart">
-        <svg className="eq" width={cw} height={ch} viewBox={`0 0 ${cw} ${ch}`} aria-hidden="true">
-          <Chart box={{ w: cw, h: ch }} nx={nx} ny={ny} />
-        </svg>
-      </div>
+      <svg className="eq" width={box.w} height={box.h} viewBox={`0 0 ${box.w} ${box.h}`} aria-hidden="true">
+        <Chart box={box} nx={nx} ny={ny} />
+      </svg>
     </section>
   )
 }
