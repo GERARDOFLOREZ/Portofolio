@@ -23,6 +23,37 @@ function Ext({ l, className }) {
   )
 }
 
+/* ---------- Voir le CV directement sur le site (sans le télécharger) ---------- */
+function CvViewer({ url }) {
+  const dlg = useRef(null)
+  const [shown, setShown] = useState(false)
+  const href = String(url || '').startsWith('/') ? url : safeUrl(url)
+  if (!href) return null
+  const canEmbed = typeof navigator !== 'undefined' && navigator.pdfViewerEnabled !== false && window.matchMedia('(min-width: 701px)').matches
+  const open = () => {
+    if (!canEmbed) { window.open(href, '_blank', 'noopener'); return }
+    setShown(true)
+    dlg.current && dlg.current.showModal()
+  }
+  const close = () => { dlg.current && dlg.current.close(); setShown(false) }
+  return (
+    <>
+      <button type="button" className="btn" onClick={open}><Bi fr="Voir mon CV" en="View my CV" /></button>
+      <dialog ref={dlg} className="cvdlg" onClose={() => setShown(false)} onClick={(e) => { if (e.target === dlg.current) close() }}>
+        <div className="cvbar">
+          <strong><Bi fr="Mon CV" en="My CV" /></strong>
+          <span className="cvact">
+            <a className="btn small" href={href} download><Bi fr="Télécharger" en="Download" /></a>
+            <a className="btn small" href={href} target="_blank" rel="noopener noreferrer"><Bi fr="Nouvel onglet" en="New tab" /></a>
+            <button type="button" className="btn small primary" onClick={close}><Bi fr="Fermer" en="Close" /></button>
+          </span>
+        </div>
+        {shown && <iframe className="cvframe" src={href + '#view=FitH'} title="CV" />}
+      </dialog>
+    </>
+  )
+}
+
 /* ---------- Hero : offre et demande, l'équilibre suit le pointeur ---------- */
 const MODES = [
   { id: 'eco', fr: 'Économie', en: 'Economics' },
@@ -95,6 +126,7 @@ function Hero({ s }) {
           </h1>
           <Bi fr={s.leadFr} en={s.leadEn} as="p" className="lead" />
           <div className="cta">
+            {s.cvUrl && <CvViewer url={s.cvUrl} />}
             {s.cvUrl && (
               <a className="btn primary" href={s.cvUrl} download>
                 <Bi fr="Télécharger mon CV" en="Download my CV" />

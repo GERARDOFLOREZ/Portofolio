@@ -216,3 +216,11 @@ html[lang="fr"] .eq .en,html[lang="en"] .eq .fr{display:none}
 @media (max-width:900px){.modes{right:16px}.hero-in{padding-top:70px}}
 .eq .seglbl{display:none}
 @media (max-width:640px){.eq .eqsign{display:none}.eq .tick{display:block}}
+
+/* visionneuse de CV */
+.cvdlg{border:0;padding:0;border-radius:18px;width:min(960px,94vw);height:min(90vh,1100px);background:var(--surface);color:var(--fg);box-shadow:0 30px 80px rgba(0,0,0,.45);overflow:hidden}
+.cvdlg[open]{display:flex;flex-direction:column}
+.cvdlg::backdrop{background:rgba(6,9,24,.7);backdrop-filter:blur(3px)}
+.cvbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.cvact{display:flex;gap:8px;flex-wrap:wrap}
+.cvframe{flex:1;width:100%;border:0;background:#fff}
