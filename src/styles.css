@@ -241,9 +241,9 @@ html[lang="fr"] .eq .en,html[lang="en"] .eq .fr{display:none}
 .band-fin .eq .lbl,.band-fin .eq .swd,.band-fin .eq .sws{display:none}
 .band-fin .eq .curve{opacity:.5}
 .band-fin .eq .gap{opacity:.14}
-.band-trader .bandbg{opacity:.42}
-.band-skills .bandbg{opacity:.6}
-.band-dev .bandbg{opacity:.7}
+.band-trader .bandbg{opacity:.4}
+.band-skills .bandbg{opacity:.55}
+.band-dev .bandbg{opacity:.6}
 .band-dev{padding-top:24px}
 /* marché */
 .trader .tgrid{stroke:var(--line);stroke-width:1;opacity:.7}
@@ -290,3 +290,10 @@ html[lang="fr"] .eq .en,html[lang="en"] .eq .fr{display:none}
 .band-fin .eq .curve{opacity:.35}
 .band-fin .eq .gap{opacity:.07}
 .eq path.curve.dem{fill:none}
+
+/* lisibilité : le contenu repose sur un voile du fond du thème, le dessin reste visible tout autour */
+.band-fin>.page,.band-trader>.page,.band-skills>.page{padding-block:36px}
+.band-fin>.page>section,.band-trader>.page>section,.band-skills>.page>section{background:color-mix(in srgb,var(--bg) 60%,transparent);-webkit-backdrop-filter:blur(2.5px);backdrop-filter:blur(2.5px);border-radius:28px;padding:56px 36px 40px;margin-block:0}
+.band-dev>.page{padding-block:20px}
+.band-dev>.page>section{background:color-mix(in srgb,var(--bg) 58%,transparent);-webkit-backdrop-filter:blur(2.5px);backdrop-filter:blur(2.5px);border-radius:28px;padding:40px 32px;max-width:640px}
+@media (max-width:640px){.band-fin>.page>section,.band-trader>.page>section,.band-skills>.page>section{padding:44px 16px 32px;border-radius:20px}.band-dev>.page>section{padding:32px 16px}.band .page{padding-inline:10px}}
