@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { defaultContent } from './content.js'
 import { loadContent } from './supabase.js'
+import { EcoChart, AcctChart, FinChart } from './HeroCharts.jsx'
 import { STATUS, STATUS_ORDER, safeUrl, waUrl } from './util.js'
 
 export function Bi({ fr, en, as: Tag = 'span', className = '' }) {
@@ -23,12 +24,22 @@ function Ext({ l, className }) {
 }
 
 /* ---------- Hero : offre et demande, l'équilibre suit le pointeur ---------- */
+const MODES = [
+  { id: 'eco', fr: 'Économie', en: 'Economics' },
+  { id: 'acct', fr: 'Comptabilité', en: 'Accounting' },
+  { id: 'fin', fr: 'Finance', en: 'Finance' },
+]
+
 function Hero({ s }) {
   const ref = useRef(null)
   const [box, setBox] = useState({ w: 1200, h: 640 })
   const [m, setM] = useState({ s: 0, t: 0 })
   const target = useRef({ s: 0, t: 0 })
   const raf = useRef(0)
+  const [mode, setModeRaw] = useState(() => {
+    try { const v = localStorage.getItem('hero-mode'); return MODES.some((x) => x.id === v) ? v : 'eco' } catch { return 'eco' }
+  })
+  const setMode = (v) => { setModeRaw(v); try { localStorage.setItem('hero-mode', v) } catch { /* ignore */ } }
 
   useEffect(() => {
     const el = ref.current
@@ -60,37 +71,16 @@ function Hero({ s }) {
     else setM(target.current)
   }
 
-  // repère : x = quantité, y = prix (valeurs entre 0 et 1)
-  const x0 = 56, y0 = box.h - 64, x1 = box.w - 28, y1 = 30
-  const X = (q) => x0 + q * (x1 - x0)
-  const Y = (p) => y0 - p * (y0 - y1)
-  const D = (q) => 0.95 - 0.8 * q + m.s
-  const S = (q) => 0.1 + 0.8 * q + m.t
-  const qe = (0.85 + m.s - m.t) / 1.6
-  const pe = S(qe)
-  const ql = box.w > 900 ? Math.min(0.9, Math.max(0.15, (box.w - 470 - x0) / (x1 - x0))) : 0.86
+  const nx = m.s / 0.4 + 0.5
+  const ny = 0.5 - m.t / 0.3
   const words = s.name.trim().split(/\s+/)
 
   return (
     <header className="hero" ref={ref} onPointerMove={pick} onPointerDown={pick}>
-      <svg className="eq" width={box.w} height={box.h} viewBox={`0 0 ${box.w} ${box.h}`} aria-hidden="true">
-        <defs>
-          <clipPath id="plot"><rect x={x0} y={y1} width={x1 - x0} height={y0 - y1} /></clipPath>
-        </defs>
-        <path d={`M${x0} ${y1 - 8}V${y0}H${x1 + 8}`} className="axis" fill="none" />
-        <text x={x0 + 10} y={y1 + 6} className="axl"><tspan className="fr">Prix</tspan><tspan className="en">Price</tspan></text>
-        <text x={x1} y={y0 + 30} textAnchor="end" className="axl"><tspan className="fr">Quantité</tspan><tspan className="en">Quantity</tspan></text>
-        <g clipPath="url(#plot)">
-          <line x1={X(0)} y1={Y(D(0))} x2={X(1)} y2={Y(D(1))} className="curve dem" />
-          <line x1={X(0)} y1={Y(S(0))} x2={X(1)} y2={Y(S(1))} className="curve sup" />
-        </g>
-        <line x1={X(qe)} y1={Y(pe)} x2={X(qe)} y2={y0} className="guide" />
-        <line x1={x0} y1={Y(pe)} x2={X(qe)} y2={Y(pe)} className="guide" />
-        <text x={X(qe)} y={y0 + 18} textAnchor="middle" className="tick">Q*</text>
-        <text x={x0 - 8} y={Y(pe) + 4} textAnchor="end" className="tick">P*</text>
-        <circle cx={X(qe)} cy={Y(pe)} r="9" className="eqdot" />
-        <text x={X(ql)} y={Y(D(ql)) + 26} textAnchor="middle" className="lbl dem"><tspan className="fr">Demande</tspan><tspan className="en">Demand</tspan></text>
-        <text x={X(ql)} y={Y(S(ql)) - 14} textAnchor="middle" className="lbl sup"><tspan className="fr">Offre</tspan><tspan className="en">Supply</tspan></text>
+      <svg className={'eq mode-' + mode} width={box.w} height={box.h} viewBox={`0 0 ${box.w} ${box.h}`} aria-hidden="true">
+        {mode === 'eco' && <EcoChart box={box} nx={nx} ny={ny} />}
+        {mode === 'acct' && <AcctChart box={box} nx={nx} ny={ny} />}
+        {mode === 'fin' && <FinChart box={box} nx={nx} ny={ny} />}
       </svg>
 
       <div className="hero-in">
@@ -124,7 +114,18 @@ function Hero({ s }) {
           </figure>
         )}
       </div>
-      <p className="hint" aria-hidden="true"><Bi fr="Bougez le pointeur : l'offre, la demande et l'équilibre se déplacent." en="Move the pointer: supply, demand and the equilibrium shift." /></p>
+      <div className="modes" role="group" aria-label="Scène / Scene">
+        {MODES.map((x) => (
+          <button key={x.id} type="button" aria-pressed={mode === x.id} onClick={() => setMode(x.id)}>
+            <Bi fr={x.fr} en={x.en} />
+          </button>
+        ))}
+      </div>
+      <p className="hint" aria-hidden="true">
+        {mode === 'eco' && <Bi fr="Bougez le pointeur : l'offre, la demande et l'équilibre se déplacent." en="Move the pointer: supply, demand and the equilibrium shift." />}
+        {mode === 'acct' && <Bi fr="Bougez le pointeur : le bilan grandit (→) et s'endette (↓), mais Actif = Passif reste vrai." en="Move the pointer: the balance sheet grows (→) and takes on debt (↓), yet Assets = Liabilities + Equity always holds." />}
+        {mode === 'fin' && <Bi fr="Bougez le pointeur : le taux (→) et la durée (↓) changent la puissance des intérêts composés." en="Move the pointer: rate (→) and duration (↓) change the power of compound interest." />}
+      </p>
     </header>
   )
 }

@@ -201,3 +201,18 @@ ul.skillchips{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap
 html[lang="fr"] .eq .en,html[lang="en"] .eq .fr{display:none}
 .hint{position:absolute;left:0;right:0;bottom:8px;margin:0;text-align:center;font-size:13px;color:var(--muted);pointer-events:none}
 @media (max-width:640px){.hint{display:none}.eq{opacity:.5}.eq .guide,.eq .tick,.eq .axl{display:none}}
+
+/* sélecteur de scène + comptabilité + finance */
+.modes{position:absolute;z-index:3;right:28px;top:16px;display:flex;border:1.5px solid var(--line);border-radius:999px;overflow:hidden;background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(6px)}
+.modes button{font:600 13px var(--f-body);background:transparent;color:var(--muted);border:0;padding:8px 14px;cursor:pointer;min-height:38px}
+.modes button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+.eq .seg{opacity:.2}
+.eq .seg.a1,.eq .seg.p2{fill:var(--accent)}
+.eq .seg.a2,.eq .seg.p1{fill:var(--mark);opacity:.34}
+.eq .seglbl{font:700 13px var(--f-body);fill:var(--muted)}
+.eq .eqsign{font:800 54px var(--f-display);fill:var(--fg);opacity:.35}
+.eq .gap{fill:var(--accent);opacity:.12}
+.eq .curve.sup[stroke-dasharray]{opacity:.7}
+@media (max-width:900px){.modes{right:16px}.hero-in{padding-top:70px}}
+.eq .seglbl{display:none}
+@media (max-width:640px){.eq .eqsign{display:none}.eq .tick{display:block}}
