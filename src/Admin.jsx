@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { defaultContent } from './content.js'
 import { supabase, loadContent, saveContent } from './supabase.js'
 import { STATUS, safeUrl } from './util.js'
+import { translateFr } from './translate.js'
 
 const clone = (x) => JSON.parse(JSON.stringify(x))
 
@@ -59,6 +60,20 @@ function LinksEditor({ links, upd }) {
   )
 }
 
+/* Paires français → anglais : [objet, clé FR, clé EN] */
+function pairs(d) {
+  const out = []
+  const top = [['leadFr', 'leadEn'], ['aboutFr', 'aboutEn'], ['availFr', 'availEn'], ['contactFr', 'contactEn'], ['interestsTitleFr', 'interestsTitleEn'], ['skillNoteFr', 'skillNoteEn']]
+  top.forEach(([f, e]) => out.push([d, f, e]))
+  ;(d.interests || []).forEach((x) => out.push([x, 'fr', 'en']))
+  ;(d.skills || []).forEach((x) => out.push([x, 'fr', 'en']))
+  ;(d.edu || []).forEach((x) => out.push([x, 'fr', 'en']))
+  ;(d.projects || []).forEach((p) => {
+    ;[['titleFr', 'titleEn'], ['descFr', 'descEn'], ['bulletsFr', 'bulletsEn'], ['resultFr', 'resultEn']].forEach(([f, e]) => out.push([p, f, e]))
+  })
+  return out
+}
+
 function clean(d) {
   const c = clone(d)
   const okLink = (l) => l.label && safeUrl(l.url)
@@ -75,10 +90,14 @@ function Editor() {
   const [d, setD] = useState(null)
   const [msg, setMsg] = useState({ t: 'Chargement…', err: false })
   const [busy, setBusy] = useState(false)
+  const [auto, setAuto] = useState(true)
+  const base = useRef(null)
 
   useEffect(() => {
     loadContent().then((c) => {
-      setD(clone({ ...defaultContent, ...(c || {}) }))
+      const first = clone({ ...defaultContent, ...(c || {}) })
+      base.current = clone(first)
+      setD(first)
       setMsg({ t: 'Les changements sont publiés quand vous enregistrez.', err: false })
     })
   }, [])
@@ -89,15 +108,42 @@ function Editor() {
   const edit = (fn) => setD((cur) => { const c = clone(cur); fn(c); return c })
   const field = (key) => ({ value: d[key], onChange: (v) => edit((c) => { c[key] = v }) })
 
+  // Traduit en anglais tout texte français modifié (ou dont l'anglais est vide) depuis le dernier enregistrement.
+  // Un texte anglais que vous avez modifié vous-même n'est jamais écrasé.
+  async function autoTranslate(doc) {
+    const old = pairs(base.current || {})
+    const now = pairs(doc)
+    let n = 0
+    for (let i = 0; i < now.length; i++) {
+      const [o, f, e] = now[i]
+      if (!String(o[f] || '').trim()) continue
+      const prev = old.find(([po, pf], j) => j === i && pf === f)
+      const frChanged = !prev || prev[0][f] !== o[f]
+      const enTouched = prev && prev[0][e] !== o[e]
+      if ((frChanged && !enTouched) || !String(o[e] || '').trim()) {
+        setMsg({ t: 'Traduction en anglais… (' + (n + 1) + ')', err: false })
+        o[e] = await translateFr(o[f])
+        n++
+      }
+    }
+    return n
+  }
+
   async function save() {
-    const c = clean(d)
+    let c = clean(d)
     if (!c.name.trim()) return setMsg({ t: 'Le nom ne peut pas être vide.', err: true })
     setBusy(true)
     setMsg({ t: 'Enregistrement…', err: false })
     try {
+      let n = 0
+      let warn = ''
+      if (auto) {
+        try { n = await autoTranslate(c) } catch (e) { warn = 'Traduction impossible : ' + (e.message || 'erreur') + '. ' }
+      }
       await saveContent(c)
+      base.current = clone(c)
       setD(clone(c))
-      setMsg({ t: 'Enregistré. Le site public est à jour.', err: false })
+      setMsg({ t: warn ? warn + 'Le reste est enregistré.' : n ? 'Enregistré. ' + n + ' texte(s) traduit(s) en anglais automatiquement. Relisez-les sur le site.' : 'Enregistré. Le site public est à jour.', err: !!warn })
     } catch (e) {
       setMsg({
         t: /row-level security|permission/i.test(e.message || '')
@@ -242,6 +288,7 @@ function Editor() {
       <div className="bar">
         <div className="in-bar">
           <span className={'msg' + (msg.err ? ' err' : '')}>{msg.t}</span>
+          <label className="auto"><input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} /> Traduire le français en anglais</label>
           <a className="btn" href="/">Voir le site</a>
           <button type="button" className="btn primary" disabled={busy} onClick={save}>Enregistrer</button>
         </div>

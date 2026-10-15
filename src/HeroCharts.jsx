@@ -17,7 +17,7 @@ export function EcoChart({ box, nx, ny }) {
   const S = (q) => 0.1 + 0.8 * q + t
   const qe = (0.85 + s - t) / 1.6
   const pe = S(qe)
-  const ql = box.w > 900 ? Math.min(0.9, Math.max(0.15, (box.w - 470 - x0) / (x1 - x0))) : 0.86
+  const ql = box.w > 900 ? Math.min(0.9, Math.max(0.15, (box.w - 540 - x0) / (x1 - x0))) : 0.86
   return (
     <>
       <defs><clipPath id="plot"><rect x={x0} y={y1} width={x1 - x0} height={y0 - y1} /></clipPath></defs>
@@ -40,18 +40,18 @@ export function EcoChart({ box, nx, ny }) {
 }
 
 export function AcctChart({ box, nx, ny }) {
-  const x0 = 56, y0 = box.h - 64, x1 = box.w - 28, y1 = 78
+  const x0 = 56, y0 = box.h - 64, x1 = box.w - 28, y1 = 60
   const H = y0 - y1
   const total = 0.5 + 0.5 * nx            // taille du bilan (le pointeur à droite = l'entreprise grandit)
   const debt = 0.1 + 0.75 * ny            // part de dettes (le pointeur en bas = plus d'endettement)
   const th = total * H
   const fixed = 0.55, W = Math.max(70, Math.min(170, (x1 - x0) * 0.17))
-  const cA = x0 + (x1 - x0) * 0.2, cP = x0 + (x1 - x0) * 0.58
+  const cA = x0 + (x1 - x0) * 0.22, cP = x0 + (x1 - x0) * 0.68
   const gap = 3
   const seg = (cx, from, h, cls, fr, en) => (
     <g key={cls}>
       <rect x={cx - W / 2} y={y0 - from - h} width={W} height={Math.max(0, h - gap)} rx="6" className={'seg ' + cls} />
-      {h > 34 && <T x={cx} y={y0 - from - h / 2 + 5} textAnchor="middle" className="seglbl" fr={fr} en={en} />}
+      {h > 34 && <T x={cx} y={y0 - from - h / 2 + 5} textAnchor="middle" className={'seglbl ' + cls} fr={fr} en={en} />}
     </g>
   )
   const lev = debt / (1 - debt)
@@ -71,7 +71,7 @@ export function AcctChart({ box, nx, ny }) {
 }
 
 export function FinChart({ box, nx, ny }) {
-  const x0 = 56, y0 = box.h - 64, x1 = box.w - 28, y1 = 84
+  const x0 = 56, y0 = box.h - 64, x1 = box.w - 28, y1 = 60
   const r = 0.01 + 0.11 * nx               // taux : 1 % à 12 %
   const yrs = Math.round(10 + 20 * ny)     // horizon : 10 à 30 ans
   const X = (t) => x0 + (t / yrs) * (x1 - x0)
@@ -95,8 +95,10 @@ export function FinChart({ box, nx, ny }) {
       <circle cx={X(yrs)} cy={Y(vmax)} r="9" className="eqdot" />
       <text x={X(yrs) - 16} y={Y(vmax) + 4} textAnchor="end" className="tick">×{num(vmax, 1)}</text>
       <T x={x1 - 20} y={y0 + 14} textAnchor="end" className="tick" fr={`${yrs} ans · taux ${num(r * 100, 1)} %`} en={`${yrs} yrs · rate ${num(r * 100, 1, 'en')}%`} />
-      <T x={x1} y={Y(simple(yrs)) + 26} textAnchor="end" className="lbl sup" fr="Intérêts simples" en="Simple interest" />
-      <T x={x1} y={Y(vmax) + 34} textAnchor="end" className="lbl dem" fr="Intérêts composés" en="Compound interest" />
+      <T x={x0 + 24} y={y1 + 16} className="lbl dem" fr="Intérêts composés" en="Compound interest" />
+      <T x={x0 + 24} y={y1 + 38} className="lbl sup" fr="Intérêts simples" en="Simple interest" />
+      <circle cx={x0 + 12} cy={y1 + 11} r="4.5" className="swd" />
+      <circle cx={x0 + 12} cy={y1 + 33} r="4.5" className="sws" />
     </>
   )
 }

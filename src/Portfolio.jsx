@@ -23,23 +23,13 @@ function Ext({ l, className }) {
   )
 }
 
-/* ---------- Hero : offre et demande, l'équilibre suit le pointeur ---------- */
-const MODES = [
-  { id: 'eco', fr: 'Économie', en: 'Economics' },
-  { id: 'acct', fr: 'Comptabilité', en: 'Accounting' },
-  { id: 'fin', fr: 'Finance', en: 'Finance' },
-]
-
-function Hero({ s }) {
+/* ---------- Pointeur : position lissée (nx, ny entre 0 et 1) pour les scènes ---------- */
+function useScene() {
   const ref = useRef(null)
   const [box, setBox] = useState({ w: 1200, h: 640 })
   const [m, setM] = useState({ s: 0, t: 0 })
   const target = useRef({ s: 0, t: 0 })
   const raf = useRef(0)
-  const [mode, setModeRaw] = useState(() => {
-    try { const v = localStorage.getItem('hero-mode'); return MODES.some((x) => x.id === v) ? v : 'eco' } catch { return 'eco' }
-  })
-  const setMode = (v) => { setModeRaw(v); try { localStorage.setItem('hero-mode', v) } catch { /* ignore */ } }
 
   useEffect(() => {
     const el = ref.current
@@ -70,17 +60,18 @@ function Hero({ s }) {
     if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) run()
     else setM(target.current)
   }
+  return { ref, box, nx: m.s / 0.4 + 0.5, ny: 0.5 - m.t / 0.3, bind: { onPointerMove: pick, onPointerDown: pick } }
+}
 
-  const nx = m.s / 0.4 + 0.5
-  const ny = 0.5 - m.t / 0.3
+/* ---------- Hero : offre et demande, l'équilibre suit le pointeur ---------- */
+function Hero({ s }) {
+  const { ref, box, nx, ny, bind } = useScene()
   const words = s.name.trim().split(/\s+/)
 
   return (
-    <header className="hero" ref={ref} onPointerMove={pick} onPointerDown={pick}>
-      <svg className={'eq mode-' + mode} width={box.w} height={box.h} viewBox={`0 0 ${box.w} ${box.h}`} aria-hidden="true">
-        {mode === 'eco' && <EcoChart box={box} nx={nx} ny={ny} />}
-        {mode === 'acct' && <AcctChart box={box} nx={nx} ny={ny} />}
-        {mode === 'fin' && <FinChart box={box} nx={nx} ny={ny} />}
+    <header className="hero" ref={ref} {...bind}>
+      <svg className="eq" width={box.w} height={box.h} viewBox={`0 0 ${box.w} ${box.h}`} aria-hidden="true">
+        <EcoChart box={box} nx={nx} ny={ny} />
       </svg>
 
       <div className="hero-in">
@@ -114,19 +105,32 @@ function Hero({ s }) {
           </figure>
         )}
       </div>
-      <div className="modes" role="group" aria-label="Scène / Scene">
-        {MODES.map((x) => (
-          <button key={x.id} type="button" aria-pressed={mode === x.id} onClick={() => setMode(x.id)}>
-            <Bi fr={x.fr} en={x.en} />
-          </button>
-        ))}
-      </div>
-      <p className="hint" aria-hidden="true">
-        {mode === 'eco' && <Bi fr="Bougez le pointeur : l'offre, la demande et l'équilibre se déplacent." en="Move the pointer: supply, demand and the equilibrium shift." />}
-        {mode === 'acct' && <Bi fr="Bougez le pointeur : le bilan grandit (→) et s'endette (↓), mais Actif = Passif reste vrai." en="Move the pointer: the balance sheet grows (→) and takes on debt (↓), yet Assets = Liabilities + Equity always holds." />}
-        {mode === 'fin' && <Bi fr="Bougez le pointeur : le taux (→) et la durée (↓) changent la puissance des intérêts composés." en="Move the pointer: rate (→) and duration (↓) change the power of compound interest." />}
-      </p>
+      <p className="hint" aria-hidden="true"><Bi fr="Bougez le pointeur : l'offre, la demande et l'équilibre se déplacent." en="Move the pointer: supply, demand and the equilibrium shift." /></p>
     </header>
+  )
+}
+
+/* ---------- Scènes Finance et Comptabilité : empilées sous l'accueil ---------- */
+function Scene({ id, tag, titleFr, titleEn, fr, en, formula, hintFr, hintEn, Chart }) {
+  const { ref, box, nx, ny, bind } = useScene()
+  const wide = box.w > 900
+  const cw = Math.max(260, wide ? box.w - 420 : box.w)
+  const ch = wide ? Math.max(box.h, 460) : 340
+  return (
+    <section id={id} className="scene" ref={ref} {...bind} aria-labelledby={id + '-t'}>
+      <div className="scene-txt">
+        <p className="tag"><Bi fr={tag[0]} en={tag[1]} /></p>
+        <h2 id={id + '-t'}><Bi fr={titleFr} en={titleEn} /></h2>
+        <Bi fr={fr} en={en} as="p" className="lead" />
+        <p className="formula">{formula}</p>
+        <p className="hint2"><Bi fr={hintFr} en={hintEn} /></p>
+      </div>
+      <div className="scene-chart">
+        <svg className="eq" width={cw} height={ch} viewBox={`0 0 ${cw} ${ch}`} aria-hidden="true">
+          <Chart box={{ w: cw, h: ch }} nx={nx} ny={ny} />
+        </svg>
+      </div>
+    </section>
   )
 }
 
@@ -435,6 +439,14 @@ export default function Portfolio() {
 
       <main id="top">
         <Hero s={s} />
+        <Scene id="finance" tag={['Finance', 'Finance']} titleFr="Le temps travaille pour le capital" titleEn="Time works for capital"
+          fr="Les intérêts composés rapportent des intérêts sur les intérêts. Plus le taux et la durée augmentent, plus l'écart avec les intérêts simples grandit."
+          en="Compound interest earns interest on interest. The higher the rate and the longer the horizon, the wider the gap with simple interest."
+          formula="V = C × (1 + r)ⁿ" hintFr="Pointeur → : taux · Pointeur ↓ : durée" hintEn="Pointer → : rate · Pointer ↓ : duration" Chart={FinChart} />
+        <Scene id="comptabilite" tag={['Comptabilité', 'Accounting']} titleFr="Le bilan est toujours équilibré" titleEn="The balance sheet always balances"
+          fr="Tout ce que l'entreprise possède (l'actif) est financé par des dettes ou par des capitaux propres. Peu importe la taille ou l'endettement : les deux côtés restent égaux."
+          en="Everything a company owns (assets) is funded by debt or by equity. Whatever the size or the leverage, both sides stay equal."
+          formula="Actif = Passif + Capitaux propres" hintFr="Pointeur → : taille du bilan · Pointeur ↓ : endettement" hintEn="Pointer → : balance sheet size · Pointer ↓ : leverage" Chart={AcctChart} />
         <div className="page">
           <Projects s={s} />
           <About s={s} />
