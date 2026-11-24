@@ -35,3 +35,20 @@ create policy "admin voit sa ligne" on public.portfolio_admins
 -- Après avoir créé votre compte (Authentication > Users > Add user),
 -- remplacez l'adresse ci-dessous par la vôtre et exécutez cette ligne :
 -- insert into public.portfolio_admins (user_id) select id from auth.users where email = 'VOTRE_EMAIL';
+
+-- Stockage des photos et du CV envoyés depuis /admin
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('site-files', 'site-files', true, 10485760,
+        array['image/jpeg','image/png','image/webp','application/pdf'])
+on conflict (id) do update set public = true, file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "admin envoie fichiers" on storage.objects;
+create policy "admin envoie fichiers" on storage.objects for insert to authenticated
+  with check (bucket_id = 'site-files'
+    and exists (select 1 from public.portfolio_admins a where a.user_id = (select auth.uid())));
+
+drop policy if exists "admin remplace fichiers" on storage.objects;
+create policy "admin remplace fichiers" on storage.objects for update to authenticated
+  using (bucket_id = 'site-files'
+    and exists (select 1 from public.portfolio_admins a where a.user_id = (select auth.uid())));

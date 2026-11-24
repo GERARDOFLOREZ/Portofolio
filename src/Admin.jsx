@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { defaultContent } from './content.js'
-import { supabase, loadContent, saveContent } from './supabase.js'
+import { supabase, loadContent, saveContent, uploadFile } from './supabase.js'
 import { STATUS, safeUrl } from './util.js'
 import { translateFr } from './translate.js'
 
@@ -16,6 +16,48 @@ function Field({ label, value, onChange, area, rows = 4, type = 'text' }) {
         <input className="in" type={type} value={value || ''} onChange={(e) => onChange(e.target.value)} />
       )}
     </label>
+  )
+}
+
+
+function FileField({ label, value, onChange, kind, folder, hint }) {
+  const [state, setState] = useState({ busy: false, msg: '', err: false })
+  const isImg = kind === 'image'
+  const accept = isImg ? 'image/jpeg,image/png,image/webp' : 'application/pdf'
+  const max = isImg ? 5 : 10
+  async function pick(e) {
+    const f = e.target.files && e.target.files[0]
+    e.target.value = ''
+    if (!f) return
+    if (f.size > max * 1024 * 1024) return setState({ busy: false, msg: `Fichier trop lourd (maximum ${max} Mo).`, err: true })
+    if (!accept.split(',').includes(f.type)) return setState({ busy: false, msg: isImg ? 'Choisissez une image JPG, PNG ou WebP.' : 'Choisissez un fichier PDF.', err: true })
+    setState({ busy: true, msg: 'Envoi en cours…', err: false })
+    try {
+      const url = await uploadFile(f, folder)
+      onChange(url)
+      setState({ busy: false, msg: 'Envoyé. Cliquez sur « Enregistrer » en bas pour publier.', err: false })
+    } catch (er) {
+      setState({ busy: false, msg: 'Échec de l’envoi : ' + (er.message || 'erreur inconnue'), err: true })
+    }
+  }
+  return (
+    <div className="fld filefld">
+      <span className="lbl">{label}</span>
+      {isImg && value && <img className="thumb" src={value} alt="" style={{ maxWidth: 120, maxHeight: 150, borderRadius: 8, display: 'block', marginBottom: 8 }} />}
+      {!isImg && value && <a href={value} target="_blank" rel="noopener noreferrer" className="btn small" style={{ marginBottom: 8, display: 'inline-block' }}>Voir le fichier actuel</a>}
+      <div className="btns">
+        <label className="btn small" style={{ cursor: 'pointer' }}>
+          {state.busy ? 'Envoi…' : isImg ? 'Changer la photo' : 'Changer le CV (PDF)'}
+          <input type="file" accept={accept} onChange={pick} disabled={state.busy} style={{ display: 'none' }} />
+        </label>
+      </div>
+      {hint && <small className="hint">{hint}</small>}
+      {state.msg && <small className="hint" style={{ color: state.err ? '#d33' : 'inherit' }}>{state.msg}</small>}
+      <details style={{ marginTop: 6 }}>
+        <summary className="hint">Adresse du fichier (avancé)</summary>
+        <input className="in" type="text" value={value || ''} onChange={(e) => onChange(e.target.value)} />
+      </details>
+    </div>
   )
 }
 
@@ -168,9 +210,9 @@ function Editor() {
           <div className="g2"><Field label="Langues (FR)" {...field('langFr')} /><Field label="Langues (EN)" {...field('langEn')} /></div>
           <div className="g2"><Field label="Disponibilité (FR)" {...field('availFr')} /><Field label="Disponibilité (EN)" {...field('availEn')} /></div>
           <div className="g2">
-            <Field label="Photo d’accueil (chemin dans public/)" {...field('photoMain')} />
-            <Field label="Photo « À propos »" {...field('photoAbout')} />
-            <Field label="Fichier CV (chemin dans public/)" {...field('cvUrl')} />
+            <FileField label="Photo d’accueil" kind="image" folder="photos" {...field('photoMain')} />
+            <FileField label="Photo « À propos »" kind="image" folder="photos" {...field('photoAbout')} />
+            <FileField label="CV (PDF)" kind="pdf" folder="cv" {...field('cvUrl')} hint="Remplace le CV affiché et téléchargeable sur le site." />
           </div>
           <LinksEditor links={d.links} upd={(fn) => edit((c) => fn(c.links))} />
         </section>
